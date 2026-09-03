@@ -69,6 +69,15 @@
 - add `tests/gateway/test_s1_bridge_v04.py::test_bridge_relays_sep2575_post_sse_acknowledged_frame` as a SEP-2575-specific regression that exercises the exact POST /mcp + text/event-stream + open-connection pattern the official conformance test uses
 - add `tools/ci_status_publisher.py` + `tests/test_ci_status_publisher.py` as a standalone commit-status poster for out-of-band CI scenarios (Windows local, manual canary, future webhooks); not invoked from the workflow itself because the in-house workflow's job result is already a commit-status check
 
+## v0.4-S2 A2A HTTP+JSON streaming — 2026-09-03
+
+- add SSE forwarding for A2A 1.0 `POST /message:stream` and `POST /tasks/{id}:subscribe` while preserving original HTTP path, body, headers and tenant scope upstream
+- delay the terminal AIE outcome until an upstream event stream terminates; a downstream disconnect after dispatch becomes terminal `uncertain` with `AIE-UPSTREAM-002` instead of a false success
+- keep task subscriptions repeatable with unique action IDs while message streaming remains replay protected by message identity
+- add static or SPIFFE Workload API TLS configuration for the dedicated HTTP+JSON transport, including atomically rotated inbound and outbound TLS contexts without process restart
+- add `aie-a2a-http-json` CLI entrypoint, reproducible example configuration, and regression coverage for streaming, disconnect semantics, tenant validation and rotating TLS wiring
+- keep gRPC, push-notification configuration resources, extended Agent Card handling and official external A2A TCK promotion evidence outside this slice
+
 ## v0.4-S2 A2A TCK preparation — 2026-09-03
 
 - pin official `a2aproject/a2a-tck` package `1.0.0` to commit `263b9cfaf16a554bdfb166a7ba5b67716e946349`

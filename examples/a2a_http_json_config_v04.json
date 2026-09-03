@@ -1,0 +1,53 @@
+{
+  "store": "./a2a-http-json.db",
+  "workload_api": {
+    "endpoint": "unix:///run/spire/sockets/agent.sock",
+    "hint": "a2a-http-json",
+    "timeout": 5.0,
+    "watch": true,
+    "reconnect_delay": 0.5
+  },
+  "principals": [
+    {
+      "id": "agent:a2a-client",
+      "type": "agent",
+      "identity_ref": "spiffe://example.org/a2a/client"
+    }
+  ],
+  "missions": [
+    {"id": "mission:a2a", "state": "active"}
+  ],
+  "leases": [
+    {
+      "id": "lease:a2a",
+      "principal_id": "agent:a2a-client",
+      "mission_id": "mission:a2a",
+      "capabilities": [
+        "a2a.message.send",
+        "a2a.message.stream",
+        "a2a.task.get",
+        "a2a.task.list",
+        "a2a.task.cancel",
+        "a2a.task.subscribe"
+      ],
+      "resource_prefixes": ["a2a://tenant/acme/"],
+      "expires_at": "2026-09-04T00:00:00+00:00",
+      "budget_remaining": 100
+    }
+  ],
+  "policy": {"type": "local", "decision": "allow"},
+  "a2a_http_json": {
+    "tenant": "acme",
+    "listen": {
+      "host": "127.0.0.1",
+      "port": 19082,
+      "tls": {"source": "workload_api", "require_client_cert": true}
+    },
+    "upstream": {
+      "url": "https://127.0.0.1:3001",
+      "timeout": 20.0,
+      "tls": {"source": "workload_api"},
+      "expected_spiffe_id": "spiffe://example.org/a2a/server"
+    }
+  }
+}

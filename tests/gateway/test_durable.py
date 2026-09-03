@@ -65,3 +65,10 @@ def test_evidence_persists_and_is_ordered(tmp_path):
     store.append_evidence({"event_type": "second", "aie.action.id": "b"})
     events = make_store(tmp_path).list_evidence()
     assert [event["event_type"] for event in events] == ["first", "second"]
+
+
+def test_outcome_can_transition_from_in_flight_to_terminal(tmp_path):
+    store = make_store(tmp_path)
+    store.put_outcome("stream-1", status="in-flight", protocol="a2a", error_code=None)
+    store.put_outcome("stream-1", status="admitted", protocol="a2a", error_code=None)
+    assert store.get_outcome("stream-1")["status"] == "admitted"

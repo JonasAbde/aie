@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import json
+import tomllib
 from datetime import datetime, timezone
+from pathlib import Path
 
 from cryptography import x509
 from cryptography.hazmat.primitives import serialization
@@ -32,6 +34,12 @@ def _base_config(tmp_path):
         ],
         "policy": {"type": "local", "decision": "allow"},
     }
+
+
+def test_pyproject_registers_http_json_console_script():
+    pyproject = Path(__file__).resolve().parents[2] / "pyproject.toml"
+    project = tomllib.loads(pyproject.read_text(encoding="utf-8"))
+    assert project["project"]["scripts"]["aie-a2a-http-json"] == "aie_runtime.gateway.a2a_http_json_cli:main"
 
 
 def test_build_http_json_transport_from_config(tmp_path):

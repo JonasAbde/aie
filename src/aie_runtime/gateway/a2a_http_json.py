@@ -407,6 +407,8 @@ class A2AHTTPJSONForwarder:
                 )
 
             stream_socket = getattr(conn, "sock", None)
+            if stream_socket is None:
+                stream_socket = getattr(getattr(response.fp, "raw", None), "_sock", None)
             if stream_socket is not None:
                 stream_socket.settimeout(None)
 

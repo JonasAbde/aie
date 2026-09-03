@@ -1,8 +1,10 @@
+import threading
 from datetime import datetime, timedelta, timezone
 
 from aie_runtime.engine import AuthorityLease, Mission, Principal
 from aie_runtime.gateway.core import AIEGateway
 from aie_runtime.gateway.durable import SQLiteGatewayStore
+from aie_runtime.gateway.forwarding import UpstreamResponse
 from aie_runtime.gateway.identity import TransportIdentity
 from aie_runtime.gateway.policy import LocalPolicyAdapter
 from aie_runtime.store import InMemoryState
@@ -51,6 +53,23 @@ def mcp_body(action_id="mcp-1"):
         "id": action_id,
         "method": "tools/call",
         "params": {"name": "refund_customer", "arguments": {"amount": 100}},
+    }
+
+
+def a2a_headers():
+    return {
+        "A2A-Version": "1.0",
+        "AIE-Mission-Id": "mission:refunds",
+        "AIE-Authority-Lease": "lease:refund",
+    }
+
+
+def a2a_body(action_id="a2a-race"):
+    return {
+        "jsonrpc": "2.0",
+        "id": action_id,
+        "method": "message/send",
+        "params": {"message": {"messageId": action_id}},
     }
 
 
@@ -105,6 +124,86 @@ def test_gateway_id_reuse_with_different_content_is_evaluated_fresh(tmp_path):
     assert third.status == "prior-outcome"
     assert third.error_code == "AIE-REPLAY-001"
     assert len(calls) == 2
+
+def test_concurrent_reservation_collision_returns_prior_without_overwriting_in_flight(tmp_path):
+    first_reserved = threading.Event()
+    second_at_reserve = threading.Event()
+    allow_second_reserve = threading.Event()
+    first_in_flight = threading.Event()
+    release_first = threading.Event()
+
+    class BlockingReplayStore(SQLiteGatewayStore):
+        def __init__(self, path):
+            super().__init__(path)
+            self._reserve_calls = 0
+            self._reserve_lock = threading.Lock()
+
+        def reserve_budget(self, lease_id, action_id, amount):
+            with self._reserve_lock:
+                self._reserve_calls += 1
+                call = self._reserve_calls
+            if call == 1:
+                super().reserve_budget(lease_id, action_id, amount)
+                first_reserved.set()
+                return
+            second_at_reserve.set()
+            assert allow_second_reserve.wait(timeout=2)
+            return super().reserve_budget(lease_id, action_id, amount)
+
+    def policy(_):
+        assert second_at_reserve.wait(timeout=2)
+        return True
+
+    gateway, _ = make_gateway(tmp_path, policy=policy)
+    store = BlockingReplayStore(tmp_path / "race.db")
+    for lease in gateway.state.leases.values():
+        store.initialize_budget(lease.id, float(lease.budget_remaining))
+    gateway.store = store
+
+    class BlockingForwarder:
+        def forward(self, *, protocol, headers, body):
+            store.put_outcome(
+                "a2a-race",
+                status="in-flight",
+                protocol="a2a",
+                error_code=None,
+            )
+            first_in_flight.set()
+            assert release_first.wait(timeout=2)
+            return UpstreamResponse(200, b"{}", {})
+
+    forwarder = BlockingForwarder()
+    results = {}
+
+    def invoke(name):
+        results[name] = gateway.forward(
+            "a2a",
+            a2a_headers(),
+            a2a_body(),
+            identity(),
+            forwarder,
+        )
+
+    first = threading.Thread(target=invoke, args=("first",), daemon=True)
+    second = threading.Thread(target=invoke, args=("second",), daemon=True)
+    first.start()
+    assert first_reserved.wait(timeout=2)
+    second.start()
+    assert second_at_reserve.wait(timeout=2)
+    assert first_in_flight.wait(timeout=2)
+
+    allow_second_reserve.set()
+    second.join(timeout=2)
+    assert not second.is_alive()
+    assert results["second"].decision.status == "prior-outcome"
+    assert results["second"].decision.error_code == "AIE-REPLAY-001"
+    assert store.get_outcome("a2a-race")["status"] == "in-flight"
+
+    release_first.set()
+    first.join(timeout=2)
+    assert not first.is_alive()
+    assert results["first"].decision.status == "admitted"
+    assert store.get_outcome("a2a-race")["status"] == "admitted"
 
 
 def test_gateway_live_revocation_fails_closed(tmp_path):

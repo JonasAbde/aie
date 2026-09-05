@@ -19,12 +19,20 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 
 
 def resolve_contracts_dir() -> Path:
-    # 1. env override
-    env = os.environ.get("AGC_CONTRACTS_DIR")
+    # 1. env overrides (both conventions: AGC_CONTRACTS_DIR from ISR/AGC
+    #    convention; GOVERNANCE_DIR/GOVERNANCE_CONTRACTS_PATH set by the
+    #    self-hosted CI sibling-checkout step)
+    for key in ("AGC_CONTRACTS_DIR", "GOVERNANCE_DIR"):
+        env = os.environ.get(key)
+        if env:
+            p = Path(env)
+            if (p / "frozen").is_dir():
+                return p
+    env = os.environ.get("GOVERNANCE_CONTRACTS_PATH")
     if env:
         p = Path(env)
-        if (p / "frozen").is_dir():
-            return p
+        if p.is_dir():
+            return p.parent
     # 2. side-by-side sibling clone
     sibling = REPO_ROOT.parent / "after-graph-governance" / "docs" / "contracts"
     if sibling.is_dir():

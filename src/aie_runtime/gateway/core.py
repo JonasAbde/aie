@@ -280,6 +280,16 @@ class AIEGateway:
             )
             return ForwardResult(decision, upstream)
         except AIEError as exc:
+            if exc.code == "AIE-REPLAY-001" and not reservation_made:
+                return ForwardResult(
+                    GatewayDecision(
+                        "prior-outcome",
+                        action.action_id,
+                        action.protocol,
+                        "AIE-REPLAY-001",
+                        prior=True,
+                    )
+                )
             if reservation_made and self.store.reservation_state(action.action_id) == "reserved":
                 self.store.rollback_budget(action.action_id)
             decision = GatewayDecision("denied", action.action_id, action.protocol, exc.code)
@@ -354,6 +364,14 @@ class AIEGateway:
             )
             return decision
         except AIEError as exc:
+            if exc.code == "AIE-REPLAY-001" and not reservation_made:
+                return GatewayDecision(
+                    "prior-outcome",
+                    action.action_id,
+                    action.protocol,
+                    "AIE-REPLAY-001",
+                    prior=True,
+                )
             if reservation_made and self.store.reservation_state(action.action_id) == "reserved":
                 self.store.rollback_budget(action.action_id)
             decision = GatewayDecision("denied", action.action_id, action.protocol, exc.code)

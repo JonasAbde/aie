@@ -144,7 +144,7 @@ def test_list_cancel_revocation_and_streaming_fail_closed(tmp_path):
         assert evidence[-2]["aie.resource"] == "a2a://task"
         assert evidence[-1]["aie.resource"] == "a2a://task/t2"
         before = len(Upstream.seen)
-        assert request(server, "/message:stream", "POST", {"message": {"messageId": "x"}}) == 400
+        assert request(server, "/message:stream", "POST", {"message": {"messageId": "x"}}) == 403
         assert len(Upstream.seen) == before
     finally:
         server.shutdown()

@@ -28,10 +28,10 @@ def normalize_a2a_request(headers: Mapping[str, str], body: Mapping[str, Any]) -
     params = body.get("params") if isinstance(body.get("params"), Mapping) else {}
     tenant = _header(headers, "AIE-A2A-Tenant")
     tenant_prefix = f"tenant/{tenant}/" if tenant else ""
-    if method in {"message/send", "SendMessage"}:
+    if method in {"message/send", "SendMessage", "message/stream", "SendStreamingMessage"}:
         message = params.get("message") if isinstance(params.get("message"), Mapping) else {}
         message_id = str(message.get("messageId") or message.get("message_id") or request_id)
-        capability = "a2a.message.send"
+        capability = "a2a.message.stream" if method in {"message/stream", "SendStreamingMessage"} else "a2a.message.send"
         resource = f"a2a://{tenant_prefix}message/{message_id}"
         subject_id = message_id
     elif method == "tasks/list":

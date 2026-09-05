@@ -1,3 +1,4 @@
+import os
 """Cross-repo conformance tests for remaining reconciliation matrix items.
 
 Validates that AIE/TG implementations conform to the remaining WORKS frozen
@@ -15,7 +16,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-FROZEN = Path(__file__).resolve().parent.parent.parent / "after-graph-governance" / "docs" / "contracts" / "frozen"
+FROZEN = Path(os.environ.get("GOVERNANCE_DIR", str(Path(__file__).resolve().parent.parent.parent / "after-graph-governance"))) / "docs" / "contracts" / "frozen"
 
 
 @pytest.fixture(scope="module")

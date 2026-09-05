@@ -1,3 +1,4 @@
+import os
 """Policy token conformance tests for policy.token/1.0 (WORKS frozen schema).
 
 Validates that AIE's authority model (AuthorityLease + BudgetLedger) maps into
@@ -14,7 +15,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-CONTRACT_PATH = Path(__file__).resolve().parent.parent.parent / "after-graph-governance" / "docs" / "contracts" / "frozen" / "policy.token.schema.json"
+CONTRACT_PATH = Path(os.environ.get("GOVERNANCE_DIR", str(Path(__file__).resolve().parent.parent.parent / "after-graph-governance"))) / "docs" / "contracts" / "frozen" / "policy.token.schema.json"
 
 
 @pytest.fixture(scope="module")

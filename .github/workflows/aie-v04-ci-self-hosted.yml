@@ -45,6 +45,21 @@ jobs:
           persist-credentials: false
           clean: true
 
+      # Workspace contract: conformance tests resolve frozen schemas from the
+      # governance sibling (via GOVERNANCE_DIR, fallback to sibling path).
+      - name: Checkout after-graph-governance sibling
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          repository: Aftergraph/after-graph-governance
+          ref: main
+          path: after-graph-governance
+          persist-credentials: false
+
+      - name: Export governance contract path
+        run: |
+          echo "GOVERNANCE_DIR=$GITHUB_WORKSPACE/after-graph-governance" >> "$GITHUB_ENV"
+          echo "GOVERNANCE_CONTRACTS_PATH=$GITHUB_WORKSPACE/after-graph-governance/docs/contracts/frozen" >> "$GITHUB_ENV"
+
       - name: Ensure uv + Python matrix + venv available
         # Single static binary, user-local, no sudo. Builds the
         # matrix Pythons on demand (cached by uv after the first

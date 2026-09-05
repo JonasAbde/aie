@@ -20,7 +20,7 @@ def _base_config(tmp_path):
         "principals": [
             {"id": "p", "type": "agent", "identity_ref": "spiffe://example.org/client/a"}
         ],
-        "missions": [{"id": "m", "state": "active"}],
+        "missions": [{"id": "m", "state": "RUNNING"}],
         "leases": [
             {
                 "id": "l",

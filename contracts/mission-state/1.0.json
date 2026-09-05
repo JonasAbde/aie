@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aftergraph.dev/contracts/mission-state/1.0.json",
+  "title": "Aftergraph Mission State Contract",
+  "description": "Canonical mission lifecycle state machine shared between AIE (normative authority), ISR (research lifecycle), and TG (runtime enforcement). Derived from ISR SPEC-001 Mission Lifecycle FSM and the AIE Mission dataclass. Version 1.0 — first cross-repo contract.",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Stable mission identifier (slug or UUID)."
+    },
+    "state": {
+      "type": "string",
+      "enum": [
+        "DRAFT", "READY", "AUTHORIZED", "RUNNING", "PAUSED",
+        "VERIFYING", "VERIFIED", "RECOVERING", "NEEDS_INPUT",
+        "FAILED", "CANCELLED", "REVOKED"
+      ],
+      "description": "Current lifecycle state. Transitions are constrained by the state machine below."
+    },
+    "allowed_transitions": {
+      "type": "object",
+      "description": "Map of state → set of allowed next states (ISR SPEC-001 FSM). Consumers MUST enforce these transitions.",
+      "additionalProperties": {
+        "type": "array",
+        "items": { "type": "string" }
+      }
+    },
+    "invariants": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Lifecycle invariants that MUST hold at all times."
+    }
+  },
+  "required": ["id", "state"],
+  "mission_state_machine": {
+    "DRAFT": { "to": ["READY", "CANCELLED"] },
+    "READY": { "to": ["AUTHORIZED", "CANCELLED"] },
+    "AUTHORIZED": { "to": ["RUNNING", "CANCELLED", "REVOKED"] },
+    "RUNNING": { "to": ["PAUSED", "VERIFYING", "NEEDS_INPUT", "CANCELLED", "REVOKED"] },
+    "PAUSED": { "to": ["RUNNING", "CANCELLED", "REVOKED"] },
+    "VERIFYING": { "to": ["VERIFIED", "RECOVERING", "NEEDS_INPUT", "FAILED"] },
+    "RECOVERING": { "to": ["RUNNING", "NEEDS_INPUT", "FAILED"] },
+    "NEEDS_INPUT": { "to": ["RUNNING", "PAUSED", "CANCELLED", "FAILED"] },
+    "VERIFIED": { "to": [] },
+    "FAILED": { "to": [] },
+    "CANCELLED": { "to": [] },
+    "REVOKED": { "to": [] }
+  },
+  "mission_invariants": [
+    "Invariant 1 (ISR SPEC-001): Complete != Verified — a mission in VERIFYING is not yet VERIFIED.",
+    "Invariant 2 (ISR SPEC-001): Evidence Gated — VERIFIED requires evidence records.",
+    "Invariant 3 (AIE TH-12): Execution-time revalidation MUST run immediately before any consequential action.",
+    "Invariant 4 (AIE W0.4): Authority leases persist across restarts via PersistentState (HMAC tamper-evidence)."
+  ],
+  "canonical_sources": {
+    "lifecycle_fsm": "intelligence-systems-research/state/lifecycle.py",
+    "authority_engine": "aie/src/aie_runtime/engine.py",
+    "persistent_state": "aie/src/aie_runtime/persistent_state.py",
+    "reconciliation_matrix": "after-graph-governance/docs/reconciliation-matrix.md#1-mission"
+  }
+}

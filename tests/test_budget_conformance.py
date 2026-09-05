@@ -1,4 +1,3 @@
-import os
 """Budget conformance tests for kernel.budget/1.0 (WORKS frozen schema).
 
 Validates that AIE's BudgetLedger semantics are compatible with the WORKS
@@ -14,8 +13,11 @@ from pathlib import Path
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # tests/ for conftest import
 
-CONTRACT_PATH = Path(os.environ.get("GOVERNANCE_DIR", str(Path(__file__).resolve().parent.parent.parent / "after-graph-governance"))) / "docs" / "contracts" / "frozen" / "kernel.budget.schema.json"
+from conftest import resolve_contracts_dir
+
+CONTRACT_PATH = resolve_contracts_dir() / "frozen" / "kernel.budget.schema.json"
 
 
 @pytest.fixture(scope="module")

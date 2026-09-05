@@ -21,6 +21,18 @@ Current maturity: **Draft 0.3 / v0.4-S1.1 external interoperability PASS** (run 
 - `interop/` — external interoperability labs
 - `evidence/` — release and promotion provenance
 - `docs/` — research, standards basis, roadmap, and design notes
+- `contracts/` — vendored cross-repo contract copies (GOV remote truth)
+
+## Cross-repo contract resolution
+
+Conformance tests resolve after-graph-governance contracts through
+`tests/conftest.py::resolve_contracts_dir()` in this order:
+
+1. `AGC_CONTRACTS_DIR` env var
+2. side-by-side `after-graph-governance` checkout
+3. vendored copy in `contracts/` (committed; re-pin with
+   `bash scripts/sync-contracts.sh` against GOV remote main, `--check`
+   verifies byte-identity and exits 1 on drift)
 
 ## Current promotion target
 

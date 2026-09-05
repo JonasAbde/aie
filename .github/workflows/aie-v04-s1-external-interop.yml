@@ -58,7 +58,7 @@ jobs:
 
       - name: Upload S1.1 evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: aie-v04-s1-external-interop-${{ github.run_id }}-${{ github.run_attempt }}
           if-no-files-found: error
